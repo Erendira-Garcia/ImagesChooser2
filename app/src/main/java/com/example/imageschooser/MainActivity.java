@@ -11,12 +11,17 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ImageView;
+
+import java.io.FileDescriptor;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -64,6 +69,16 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        //TODO chose image from gallery
+        frame.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent galleryIntent = new Intent(Intent.ACTION_PICK,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(galleryIntent, RESULT_LOAD_IMAGE);
+            }
+        });
     }
 
     Uri image_uri;
@@ -104,6 +119,32 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == IMAGE_CAPTURE_CODE && resultCode == RESULT_OK)
         {
             frame.setImageURI(image_uri);
+            Bitmap bitmap = uriToBitmap(image_uri);
+            frame.setImageBitmap(bitmap);
         }
+
+         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK
+                 && data != null){
+             image_uri = data.getData();
+             frame.setImageURI(image_uri);
+         }
     }
+
+    //TODO takes URI of the image and returns bitmap
+    private Bitmap uriToBitmap(Uri selectedFileUri) {
+        try {
+            ParcelFileDescriptor parcelFileDescriptor =
+                    getContentResolver().openFileDescriptor(selectedFileUri, "r");
+            FileDescriptor fileDescriptor =
+                    parcelFileDescriptor.getFileDescriptor();
+            Bitmap image =
+                    BitmapFactory.decodeFileDescriptor(fileDescriptor);
+            parcelFileDescriptor.close();
+            return image;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
